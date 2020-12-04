@@ -41,7 +41,5 @@ vignettes/*.pdf
 .Renviron
 
 # Raw player tracking data files due to size
-data/weekly_raw_tracking
-
-
+data/input/weekly_raw_tracking/
 
