@@ -1,6 +1,7 @@
 # History files
 .Rhistory
 .Rapp.history
+.DS_Store
 
 # Session Data files
 .RData
@@ -19,6 +20,7 @@
 
 # RStudio files
 .Rproj.user/
+*.Rproj
 
 # produced vignettes
 vignettes/*.html
@@ -37,3 +39,9 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+
+# Raw player tracking data files due to size
+data/weekly_raw_tracking
+
+
+
