@@ -9,6 +9,11 @@ data['y'] = data['y']/53.3
 data['s'] = data['s']/max(data['s'])
 data['dir'] = data['dir']/max(data['dir'])
 
+games = pd.read_csv("games.csv")
+games_d = dict(zip(list(games['gameId']), list(games['week']))) 
+week = [games_d[i] for i in list(data['gameId'])]
+data['week'] = week
+
 plays=data.groupby(by=["key"])
 
 defense = ["FS","SS","S","CB"]
@@ -16,6 +21,7 @@ offense = ['WR','QB','RB','TE']
 
 X_train = np.zeros((8*len(set(data['key'])),6))
 y_train = np.zeros((8*len(set(data['key'])),4))
+week_train = np.zeros(8*len(set(data['key'])))
 
 pii = 0
 
@@ -36,6 +42,7 @@ for p in set(data['key']):
             x_f += list(np.array(ball[ball.team=="football"][['x','y']]).reshape((2,)))
             X_train[pii,:] = np.array(x_f) 
             y_train[pii,:] = y
+            week_train[pii] = float(ball['week'])
             pii += 1
             
     except Exception as e:
