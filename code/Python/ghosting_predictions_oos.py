@@ -57,10 +57,7 @@ for p in set(data['key']):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         print(exc_type, exc_tb.tb_lineno)
 
-ghosts_df['ghost_X'] = ghosts_X
-ghosts_df['ghost_Y'] = ghosts_Y
-ghosts_df[['x','y','ghost_X','ghost_Y']]
+
 ghosts_df['x'] = ghosts_df['x']*120.0
 ghosts_df['y'] = ghosts_df['y']*53.3
-ghosts_df[['x','y','ghost_X','ghost_Y']]
 ghosts_df.to_csv('ghosts.csv',index=False)
