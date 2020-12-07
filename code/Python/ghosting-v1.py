@@ -107,25 +107,19 @@ def train(params,x1_train,y_train):
 
 X_train = X_train[:pii]
 y_train = y_train[:pii]
-X_traj_shuffled, y_traj_shuffled = unison_shuffled_copies(X_train, y_train)
+X_traj_shuffled, y_traj_shuffled, week_train_shuffled = unison_shuffled_copies(X_train, y_train[:,0:2],week_train)
 X_traj_shuffled = X_traj_shuffled.reshape((X_traj_shuffled.shape[0],1,X_traj_shuffled.shape[1]))
 
-# just for some quick out-of-sample testing for now
-X_test = X_traj_shuffled[0:10]
-y_test = y_traj_shuffled[0:10]
-
-X_traj_shuffled = X_traj_shuffled[10:]
-y_traj_shuffled = y_traj_shuffled[10:]
 
 # start training
 
-decl = lambda r, b, sl, lu, ll, dr: "traj_models_def_seq2seq/role="+str(r)+"-batch="+str(b)+"-seq_len="+str(sl)+"-LSTMunits="+str(lu)+"-LSTMlayers="+str(ll)+"-dropout="+str(dr)
+decl = lambda w, b, sl, lu, ll, dr: "traj_models_def_seq2seq/week="+str(w)+"-batch="+str(b)+"-seq_len="+str(sl)+"-LSTMunits="+str(lu)+"-LSTMlayers="+str(ll)+"-dropout="+str(dr)
 
 role_train = 1
-batch_sz = [512]
+batch_sz = [128]
 lu = [32]
 dr = [0.2]
-ll = [1]
+ll = [3]
 sls = [1]
 
 
@@ -134,8 +128,17 @@ for bs in batch_sz:
                 for drr in dr:
                         for lll in ll:
                                 for sl in sls:
+                                    for week_out in range(1,18):
                                         print("+++++++++++++++++++++++++++++++++")
-                                        print("Training for: ",role_train, bs, luu, lll, drr)
-                                        fldr = decl(role_train,bs, sl, luu, lll, drr)
-                                        train(Params(batch_sz = bs, seq_len = sl,lstm_args = [(luu,)]*lll, drout = drr, role = role_train, folder = fldr),X_traj_shuffled,y_traj_shuffled)
+                                        print("Training for: ",role_train, bs, luu, lll, drr, week_out)
+                                        fldr = decl(week_out,bs, sl, luu, lll, drr)
+                                        indices = [i for i, x in enumerate(week_train_shuffled) if x != week_out]
+                                        indices_test = [i for i, x in enumerate(week_train_shuffled) if x == week_out]
+
+                                        X_test = X_traj_shuffled[indices_test]
+                                        y_test = y_traj_shuffled[indices_test]
+
+                                        X_traj_shuffled_w = X_traj_shuffled[indices]
+                                        y_traj_shuffled_w = y_traj_shuffled[indices]
+                                        train(Params(batch_sz = bs, seq_len = sl,lstm_args = [(luu,)]*lll, drout = drr, role = role_train, folder = fldr),X_traj_shuffled_w,y_traj_shuffled_w)
 
