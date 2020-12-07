@@ -46,14 +46,12 @@ for p in set(data['key']):
             x_f = []
             x_f = list(np.array(pos0.iloc[d][['x','y','s','dir']]).reshape((4,)))
             defender_id = pos0.iloc[d]['nflId'] 
-            #y = np.array(tmp_1[tmp_1.nflId == defender_id][['x','y','s','dir']]).reshape((4,))
-            ghosts_df = ghosts_df.append(tmp_1[tmp_1.nflId == defender_id],ignore_index=True)
             x_f += list(np.array(ball[ball.team=="football"][['x','y']]).reshape((2,)))
             X_train[pii,:] = np.array(x_f) 
             pred= np.multiply(models[int(ball['week'])-1].predict(np.array([X_train[pii]]).reshape(1,1,6)),np.array([120,53.3]))
-            #ghosts_df = ghosts_df.append(pos0.iloc[d],ignore_index = True)
             ghosts_X.append(pred[0][0])
             ghosts_Y.append(pred[0][1])
+            ghosts_df = ghosts_df.append(tmp_1[tmp_1.nflId == defender_id],ignore_index=True)
             pii += 1
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
