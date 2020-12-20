@@ -136,7 +136,7 @@ walk(1:17,
                 dir_wrt_bc_diff = pmin(
                   pmin(abs(bc_dir - dir),
                        abs(bc_dir - (dir - 360))), abs(bc_dir - (dir + 360)))) %>%
-         # Now drop the bc columns:
+         # Now drop the bc columns
          dplyr::select(-bc_x, -bc_y, -bc_dir)
 
 
@@ -146,7 +146,7 @@ walk(1:17,
          unite("player_type", side_of_ball:player_dist_bc_rank, sep = "_") %>%
          # Now convert to wider dataset using the player_type as the name:
          pivot_wider(names_from = player_type,
-                     values_from = nflId:dir,
+                     values_from = nflId:dir_wrt_bc_diff,
                      names_glue = "{player_type}_{.value}")
 
 
