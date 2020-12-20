@@ -1,4 +1,4 @@
-# PURPOSE: Construct the datasets for all receptions with information about
+# PURPOSE: TEST constructing datasets for all receptions with information about
 #          each player on the field with respect to the ball-carrier. This
 #          will ignore interceptions and just focus on offensive receptions.
 #          The main idea here is to construct a wide dataset at the frame level
@@ -113,7 +113,8 @@ bc_test_info <- bc_test_data %>%
 # for each defender, sorting their covariate by distance:
 other_players_test_info <- test_week_data %>%
   filter(is_target == 0, displayName != "Football") %>%
-  left_join(dplyr::select(bc_test_info, gameId, playId, frameId, bc_x, bc_y),
+  left_join(dplyr::select(bc_test_info, gameId, playId,
+                          frameId, bc_x, bc_y, bc_dir),
             by = c("gameId", "playId", "frameId")) %>%
   filter(!is.na(bc_x))
 
@@ -130,9 +131,42 @@ long_other_players_test_info <- other_players_test_info %>%
   ungroup() %>%
   # Select the necessary columns:
   dplyr::select(gameId, playId, frameId,
-                side_of_ball, player_dist_bc_rank,
+                playDirection, side_of_ball, player_dist_bc_rank,
                 nflId, displayName, position,
-                dist_to_bc, x, y, s, a, dis, o, dir)
+                dist_to_bc, x, y, s, a, dis, o, dir,
+                # Keep the bc_x, bc_y, bc_dir for constructing covariates
+                # then will drop after
+                bc_x, bc_y, bc_dir) %>%
+  # Now make variables adjusted to the target endzone (since these are only
+  # for receptions I don't have to worry about plays flipping). The orientation
+  # is set up so that all plays are going to the right with 110 marking the
+  # target endzone and y from 0 to (160 / 3) denotes from right to left (from
+  # the QB's perspective).
+  # First adjust the x coordinates
+  mutate(adj_x = 110 - x, adj_bc_x = 110 - bc_x,
+         # Next the y so that 0 indicates middle of field  (from QB POV)
+         # while > 0 indicates left side and < 0 indicates right side
+         adj_y = y - (160 / 6), adj_bc_y = bc_y - (160 / 6),
+         # Compute change variables with respect to ball carrier and target
+         # endzone:
+         adj_x_change = adj_bc_x - adj_x, adj_y_change = adj_bc_y - adj_y,
+         # Next compute direction with respect to target endzone:
+         dir_target_endzone =
+           case_when(
+             (playDirection == "left") & (90 < dir) ~ 270 - dir,
+             (playDirection == "left") & (dir <= 90) ~ -(dir + 90),
+             (playDirection == "right") & (dir < 270) ~ 90 - dir,
+             (playDirection == "right") & (dir >= 270) ~ 450 - dir,
+             TRUE ~ NA_real_),
+         # Now compute the direction with respect to the ball-carrier as
+         # simply the absolute minimum difference - this will be the minimum
+         # across a few possible scenarios to deal 0 to 360 limits
+         dir_wrt_bc_diff = pmin(
+           pmin(abs(bc_dir - dir),
+                abs(bc_dir - (dir - 360))), abs(bc_dir - (dir + 360)))) %>%
+  # Now drop the bc columns:
+  dplyr::select(-bc_x, -bc_y, -bc_dir)
+
 
 # Make a wide version:
 wide_other_players_test_info <- long_other_players_test_info %>%
