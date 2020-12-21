@@ -78,7 +78,9 @@ walk(1:17,
          # Rename columns:
          dplyr::rename(bc_nflId = nflId, bc_displayName = displayName, bc_position = position,
                        bc_x = x, bc_y = y, bc_s = s, bc_a = a, bc_dis = dis,
-                       bc_o = o, bc_dir = dir)
+                       bc_o = o, bc_dir = dir) %>%
+         dplyr::mutate(adj_bc_x = 110 - bc_x,
+                       adj_bc_y = bc_y - (160 / 6))
 
        # Now want to join the ball carrier information at the frame level to the rest
        # of the tracking data, removing rows without data, to then compute distances
@@ -86,7 +88,7 @@ walk(1:17,
        other_players_info <- week_data %>%
          filter(is_target == 0, displayName != "Football") %>%
          left_join(dplyr::select(bc_info, gameId, playId,
-                                 frameId, bc_x, bc_y, bc_dir),
+                                 frameId, bc_x, bc_y, adj_bc_x, adj_bc_y),
                    by = c("gameId", "playId", "frameId")) %>%
          filter(!is.na(bc_x))
 
@@ -108,17 +110,17 @@ walk(1:17,
                        dist_to_bc, x, y, s, a, dis, o, dir,
                        # Keep the bc_x, bc_y for constructing covariates
                        # then will drop after
-                       bc_x, bc_y) %>%
+                       bc_x, bc_y, adj_bc_x, adj_bc_y) %>%
          # Now make variables adjusted to the target endzone (since these are only
          # for receptions I don't have to worry about plays flipping). The orientation
          # is set up so that all plays are going to the right with 110 marking the
          # target endzone and y from 0 to (160 / 3) denotes from right to left (from
          # the QB's perspective).
          # First adjust the x coordinates
-         mutate(adj_x = 110 - x, adj_bc_x = 110 - bc_x,
+         mutate(adj_x = 110 - x,
                 # Next the y so that 0 indicates middle of field  (from QB POV)
                 # while > 0 indicates left side and < 0 indicates right side
-                adj_y = y - (160 / 6), adj_bc_y = bc_y - (160 / 6),
+                adj_y = y - (160 / 6),
                 # Compute change variables with respect to ball carrier and target
                 # endzone:
                 adj_x_change = adj_bc_x - adj_x, adj_y_change = adj_bc_y - adj_y,
@@ -140,7 +142,7 @@ walk(1:17,
                              abs(angle_with_bc - (dir_target_endzone - 360))),
                         abs(angle_with_bc - (dir_target_endzone + 360)))) %>%
          # Now drop the bc columns
-         dplyr::select(-bc_x, -bc_y, -angle_with_bc)
+         dplyr::select(-bc_x, -bc_y, -angle_with_bc, -adj_bc_x, -adj_bc_y)
 
 
        # Make a wide version:
