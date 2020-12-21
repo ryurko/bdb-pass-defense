@@ -106,9 +106,9 @@ walk(1:17,
                        playDirection, side_of_ball, player_dist_bc_rank,
                        nflId, displayName, position,
                        dist_to_bc, x, y, s, a, dis, o, dir,
-                       # Keep the bc_x, bc_y, bc_dir for constructing covariates
+                       # Keep the bc_x, bc_y for constructing covariates
                        # then will drop after
-                       bc_x, bc_y, bc_dir) %>%
+                       bc_x, bc_y) %>%
          # Now make variables adjusted to the target endzone (since these are only
          # for receptions I don't have to worry about plays flipping). The orientation
          # is set up so that all plays are going to the right with 110 marking the
@@ -130,14 +130,17 @@ walk(1:17,
                     (playDirection == "right") & (dir < 270) ~ 90 - dir,
                     (playDirection == "right") & (dir >= 270) ~ 450 - dir,
                     TRUE ~ NA_real_),
+                # Compute the angle between the ball-carrier and the player:
+                angle_with_bc = (atan2(adj_y_change, -adj_x_change) * 180) / pi,
                 # Now compute the direction with respect to the ball-carrier as
                 # simply the absolute minimum difference - this will be the minimum
                 # across a few possible scenarios to deal 0 to 360 limits
                 dir_wrt_bc_diff = pmin(
-                  pmin(abs(bc_dir - dir),
-                       abs(bc_dir - (dir - 360))), abs(bc_dir - (dir + 360)))) %>%
+                        pmin(abs(angle_with_bc - dir_target_endzone),
+                             abs(angle_with_bc - (dir_target_endzone - 360))),
+                        abs(angle_with_bc - (dir_target_endzone + 360)))) %>%
          # Now drop the bc columns
-         dplyr::select(-bc_x, -bc_y, -bc_dir)
+         dplyr::select(-bc_x, -bc_y, -angle_with_bc)
 
 
        # Make a wide version:
