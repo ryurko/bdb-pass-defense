@@ -72,7 +72,7 @@ walk(1:17,
        # for offense and defense players with respect to:
        bc_info <- bc_data %>%
          dplyr::select(gameId, playId, frameId, nflId,
-                       event, playDirection, displayName, position,
+                       event, displayName, position,
                        x, y, s, a, dis, o, dir, is_start_bc, is_end_bc,
                        start_bc_frame, end_bc_frame) %>%
          # Rename columns:
