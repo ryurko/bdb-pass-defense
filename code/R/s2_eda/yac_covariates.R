@@ -113,6 +113,6 @@ off_var_coverage %>%
 # for both
 
 # Should go back at some point to review whats wrong with the 3 plays without
-# any nearest defenders
+# any defenders...
 
 
