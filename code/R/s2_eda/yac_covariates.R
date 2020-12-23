@@ -107,7 +107,7 @@ off_var_coverage %>%
   geom_bar(stat = "identity") +
   facet_wrap(~ model_variable, ncol = 2) +
   theme_bw()
-# Only consider up to 5 closest offense teammates - all have 4
+# Only consider up to 5 closest offense teammates - all plays have info for 4
 
 # Would not be surprising to see nearest three basically be all that matters
 # for both
