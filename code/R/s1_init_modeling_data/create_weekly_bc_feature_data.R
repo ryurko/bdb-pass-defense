@@ -74,13 +74,21 @@ walk(1:17,
          dplyr::select(gameId, playId, frameId, nflId,
                        event, displayName, position,
                        x, y, s, a, dis, o, dir, is_start_bc, is_end_bc,
-                       start_bc_frame, end_bc_frame) %>%
+                       start_bc_frame, end_bc_frame, playDirection) %>%
          # Rename columns:
          dplyr::rename(bc_nflId = nflId, bc_displayName = displayName, bc_position = position,
                        bc_x = x, bc_y = y, bc_s = s, bc_a = a, bc_dis = dis,
                        bc_o = o, bc_dir = dir) %>%
          dplyr::mutate(adj_bc_x = 110 - bc_x,
-                       adj_bc_y = bc_y - (160 / 6))
+                       adj_bc_y = bc_y - (160 / 6),
+                       bc_dir_target_endzone =
+                               case_when(
+                                       (playDirection == "left") & (90 < bc_dir) ~ 270 - bc_dir,
+                                       (playDirection == "left") & (bc_dir <= 90) ~ -(bc_dir + 90),
+                                       (playDirection == "right") & (bc_dir < 270) ~ 90 - bc_dir,
+                                       (playDirection == "right") & (bc_dir >= 270) ~ 450 - bc_dir,
+                                       TRUE ~ NA_real_)) %>%
+               dplyr::select(-playDirection)
 
        # Now want to join the ball carrier information at the frame level to the rest
        # of the tracking data, removing rows without data, to then compute distances

@@ -63,6 +63,7 @@ walk(1:17,
               dplyr::select(-start_bc_frame, -end_bc_frame, -adj_start_bc_frame) %>%
               # Add the week id to use for the cross validation purpose:
               mutate(week_id = week_i) %>%
+              distinct() %>%
               write_rds(paste0("data/model_data/weekly/week",
                                week_i, ".rds"), compress = "gz")
 
