@@ -1,4 +1,4 @@
-# PURPOSE: Pre-processs raw tracking data csv files
+# PURPOSE: Pre-process raw tracking data csv files
 
 #          This script mostly follows the Kaggle tutorial: https://www.kaggle.com/tombliss/tutorial
 
