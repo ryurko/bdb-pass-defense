@@ -35,7 +35,12 @@ walk(1:17,
        # Get the QB position at the point of passing:
        qb_data <- week_data %>%
          filter(position == "QB", event == "pass_forward") %>%
-         distinct()
+         distinct() %>%
+         group_by(gameId, playId) %>%
+         arrange(frameId) %>%
+         # Only keep the first instance...
+         slice(1) %>%
+         ungroup()
 
        # In case there are multiple QBs - find the one closest to the football
        # at the time of release:
@@ -43,7 +48,8 @@ walk(1:17,
          filter(displayName == "Football", event == "pass_forward") %>%
          distinct() %>%
          dplyr::select(gameId, playId, frameId, x, y) %>%
-         dplyr::rename(ball_x = x, ball_y = y)
+         dplyr::rename(ball_x = x, ball_y = y) %>%
+         distinct()
 
        # Join to the QB data, then only keep the QB closest to the ball:
        qb_data <- qb_data %>%
@@ -58,7 +64,12 @@ walk(1:17,
        # Get the receiver info at the release point:
        rec_data <- week_data %>%
          filter(is_target == 1, event == "pass_forward") %>%
-         distinct()
+         distinct() %>%
+         group_by(gameId, playId) %>%
+         arrange(frameId) %>%
+         # Only keep the first instance...
+         slice(1) %>%
+         ungroup()
 
        # Convert the dataset with all of the information above into a more concise
        # dataset with just the necessary ball carrier info to then create variables
