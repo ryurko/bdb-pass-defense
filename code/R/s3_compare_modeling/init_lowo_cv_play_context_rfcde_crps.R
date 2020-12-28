@@ -148,7 +148,7 @@ lowo_cv_summary <-
                                   tibble(pred_yards_gain = gain_predict_grid,
                                          test_cde = as.numeric(test_cde_pred)) %>%
                                     # Add column for predicted CDF:
-                                    mutate(test_cdf = cumsum(test_cde * delta_yards),
+                                    mutate(test_cdf = cumsum(test_cde / sum(test_cde)),
                                            # Finally with the test row index and observed yards gained:
                                            test_row_i = test_i,
                                            obs_yards_gain = test_data_resp[test_i])

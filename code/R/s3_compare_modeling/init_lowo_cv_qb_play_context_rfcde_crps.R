@@ -170,7 +170,7 @@ lowo_cv_summary <-
                                   tibble(pred_yards_gain = gain_predict_grid,
                                          test_cde = as.numeric(test_cde_pred)) %>%
                                     # Add column for predicted CDF:
-                                    mutate(test_cdf = cumsum(test_cde * delta_yards),
+                                    mutate(test_cdf = cumsum(test_cde / sum(test_cde)),
                                            # Finally with the test row index and observed yards gained:
                                            test_row_i = test_i,
                                            obs_yards_gain = test_data_resp[test_i])
@@ -178,12 +178,18 @@ lowo_cv_summary <-
 
                       test_data_cde_preds %>%
                         group_by(test_row_i) %>%
-                        summarize(play_crps =
-                                    mean(delta_yards *
+                        summarize(obs_yards_gain = first(obs_yards_gain),
+                                  expected_yac = sum(pred_yards_gain *
+                                                      (test_cde / sum(test_cde)),
+                                                    na.rm = TRUE),
+                                  play_crps =
+                                    mean(#delta_yards *
                                            (test_cdf -
                                               as.numeric((pred_yards_gain -
                                                             obs_yards_gain) >= 0))^2)) %>%
-                        summarize(test_crps = mean(play_crps)) %>%
+                        summarize(test_crps = mean(play_crps),
+                                  test_yac_rmse = sqrt(mean((expected_yac -
+                                                               obs_yards_gain)^2))) %>%
                         mutate(test_week = test_week_i)
 
 
