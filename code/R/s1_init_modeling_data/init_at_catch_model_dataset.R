@@ -1,6 +1,8 @@
 # PURPOSE: Create a dataset with the reasonable set of considered covariates to
 #          simplify construction later on
 
+library(tidyverse)
+
 # Load modeling data and limit to at catch --------------------------------
 
 model_data <-
