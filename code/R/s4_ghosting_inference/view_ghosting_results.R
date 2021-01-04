@@ -72,11 +72,14 @@ player_ghost_summary %>%
   #             group_by(nflId) %>%
   #             summarize(position = first(position)) %>%
   #             ungroup(), by = c("nfl_id" = "nflId")) %>%
-  ggplot(aes(x = ave_prob_first_down_diff, y = ave_prob_td_diff)) +
+  ggplot(aes(x = total_prob_first_down_diff, y = total_prob_td_diff)) +
   geom_point() +
+  # geom_point(data = player_ghost_summary %>%
+  #              filter(player_display_name == "Brian Poole"),
+  #            size = 5, color = "darkred") +
   geom_label_repel(data = player_ghost_summary %>%
                      filter(n_plays >= 50) %>%
-                     arrange(ave_prob_first_down_diff) %>%
+                     arrange(total_prob_first_down_diff) %>%
                      slice(1:10), #%>%
                    # Join their positions:
                    # left_join(ghosting_data %>%

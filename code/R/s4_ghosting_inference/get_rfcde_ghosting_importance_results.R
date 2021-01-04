@@ -44,7 +44,10 @@ play_context_var_names <-
 
 # Create the final list of variables to use:
 yac_model_vars <- c(bc_var_names, play_context_var_names,
-                    unlist(def_var_name_list[1:2]))
+                    unlist(def_var_name_list[1:2])) %>%
+  str_subset("adj_y_change$", negate = TRUE) %>%
+  str_subset("adj_y_change_to_qb$", negate = TRUE) %>%
+  str_subset("dir_target_endzone$", negate = TRUE)
 
 
 # Generate LOWO RFCDE model list ------------------------------------------
@@ -192,7 +195,14 @@ pred_yac_distr_summary <- init_rfcde_pred_yac_data %>%
   # Convert the negative probs due to rounding
   mutate(prob_td = pmax(prob_td, 0),
          prob_first_down = pmax(prob_first_down, 0),
-         prob_positive_yac = pmax(prob_positive_yac, 0))
+         prob_positive_yac = pmax(prob_positive_yac, 0)) %>%
+  # Join the yards from first down marker back to include a variable denoting
+  # if the first down was already achieved based on the reception:
+  dplyr::left_join(dplyr::select(model_data, game_play_id, adj_bc_x_from_first_down),
+                   by = "game_play_id") %>%
+  mutate(is_first_down_at_catch = as.numeric(adj_bc_x_from_first_down <= 0)) %>%
+  dplyr::select(-adj_bc_x_from_first_down)
+
 # Save this file:
 write_rds(pred_yac_distr_summary,
           "data/model_output/lowo_pred_yac_distr_summary.rds")
@@ -202,7 +212,7 @@ write_rds(pred_yac_distr_summary,
 
 # Load the ghosting data
 ghosting_data <-
-  read_csv("data/ghosting_output/at_catch_ghosts_given_at_catch.csv")
+  read_csv("data/ghosting_output/at_catch_ghosts_given_at_catch_upd.csv")
 
 # Next load the original weekly data information containing info on the players
 # involved - to join to this ghosting data
@@ -218,12 +228,7 @@ def_player_data <-
                 paste0("defense_", 1:4, "_displayName"),
                 paste0("defense_", 1:4, "_nflId"))
 
-# NOTE: There are currently duplicates for the ghosting - just take the first
-#       row to start then join - will need to fix this later
 ghosting_data <- ghosting_data %>%
-  group_by(game_play_id) %>%
-  slice(1) %>%
-  ungroup() %>%
   inner_join(def_player_data, by = "game_play_id")
 
 # Convert this to a longer dataset:
