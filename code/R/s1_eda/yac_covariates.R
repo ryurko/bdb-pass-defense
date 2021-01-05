@@ -165,6 +165,7 @@ model_data %>%
   ggplot(aes(x = value, y = end_x_change)) +
   geom_point(alpha = 0.1) +
   facet_wrap(~ feature, ncol = 3, scales = "free_x") +
+  labs(x = "Feature value", y = "YAC") +
   theme_bw() +
   theme(strip.background = element_blank())
 
@@ -187,11 +188,41 @@ model_data %>%
   ggplot(aes(x = value, y = end_x_change)) +
   geom_point(alpha = 0.1) +
   facet_wrap(~ feature, ncol = 3, scales = "free_x") +
+  labs(x = "Feature value", y = "YAC") +
   theme_bw() +
   theme(strip.background = element_blank())
 
 # Okay this is much better looking - I should just go ahead and use these instead
 
+# Make separate figures for receiver direction to target endzone (abs val) and
+# info about QB at release:
+bc_dir_plot <- model_data %>%
+  mutate(abs_bc_dir_target_endzone = abs(bc_dir_target_endzone)) %>%
+  ggplot(aes(x = abs_bc_dir_target_endzone, y = end_x_change)) +
+  geom_point(alpha = 0.1) +
+  geom_vline(xintercept = 90, linetype = "dashed", color = "darkred") +
+  annotate("segment", x = 100, xend = 165, y = 45, yend = 45,
+           color = "darkred", size = 1, arrow = arrow()) +
+  annotate("text", label = "Receiver's back is\nfacing target endzone",
+           x = 130, y = 50, color = "darkred") +
+  labs(x = "Absolute value of angle between receiver's direction and target endzone",
+       y = "Observed YAC",
+       title = "Decrease in YAC when receiver's back is facing target endzone",
+       subtitle = "Vertical red dashed line denotes 90 degree angle") +
+  theme_bw() +
+  theme(strip.background = element_blank())
+
+# QB speed:
+qb_speed_plot <- model_data %>%
+  ggplot(aes(x = qb_s, y = end_x_change)) +
+  geom_point(alpha = 0.1) +
+  # annotate("text", label = "Receiver's back is\nfacing target endzone",
+  #          x = 130, y = 50, color = "darkred") +
+  labs(x = "QB's speed in yards/second at release",
+       y = "Observed YAC",
+       title = "Decrease in YAC as QB's speed at release increases") +
+  theme_bw() +
+  theme(strip.background = element_blank())
 
 # YAC relationships with play-context -------------------------------------
 
