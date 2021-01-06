@@ -2,6 +2,7 @@
 
 library(tidyverse)
 library(ggrepel)
+library(patchwork)
 
 # Load the summary of ghosting evaluation ---------------------------------
 
@@ -74,7 +75,7 @@ player_ghost_summary <- player_ghost_summary %>%
 # Create displays of totals -----------------------------------------------
 
 # First a display a total yac diff against total prob of pos yac diff:
-player_ghost_summary %>%
+yac_change_plot <- player_ghost_summary %>%
   #filter(n_plays >= 50) %>%
   ggplot(aes(x = total_yac_diff, y = total_prob_pos_yac_diff,
              color = position_easy)) +
@@ -87,18 +88,20 @@ player_ghost_summary %>%
                        color = position_easy),
                    min.segment.length = 0, box.padding = 1,
                    show.legend = FALSE) +
+  annotate(geom = "text", label = 'Positioned "better" than ghosts', x = -50, y = -15,
+           color = "darkred") +
   theme_bw() +
   ggthemes::scale_color_colorblind() +
   guides(color = guide_legend(override.aes = list(size = 4))) +
   theme(legend.position = "bottom") +
   geom_vline(xintercept = 0, linetype = "dashed", color = "darkred") +
   geom_hline(yintercept = 0, linetype = "dashed", color = "darkred") +
-  labs(x = "Sum change expected YAC",
-       y = "Sum change Pr(YAC > 0)",
+  labs(x = "Sum of change in expected YAC",
+       y = "Sum of change in Pr(YAC > 0)",
        color = "Position")
 
 # Next a display of probability of TD and first down:
-player_ghost_summary %>%
+prob_change_plot <- player_ghost_summary %>%
   ggplot(aes(x = total_prob_first_down_diff, y = total_prob_td_diff,
              color = position_easy)) +
   geom_point() +
@@ -115,9 +118,17 @@ player_ghost_summary %>%
   theme(legend.position = "bottom") +
   geom_vline(xintercept = 0, linetype = "dashed", color = "darkred") +
   geom_hline(yintercept = 0, linetype = "dashed", color = "darkred") +
-  labs(x = "Sum change Pr(1st down)",
-       y = "Sum change Pr(TD)",
+  labs(x = "Sum of change in Pr(1st down)",
+       y = "Sum of change in Pr(TD)",
        color = "Position")
+yac_change_plot_new <- yac_change_plot + theme(legend.position = "none")
+
+
+(yac_change_plot_new / prob_change_plot) +
+  plot_annotation(title = "Comparison of player performance based on summaries of estimates for YAC distribution",
+                  subtitle = "Top 10 players based on change in expected YAC and Pr(1st down) are labeled")
+
+
 
 
 # What about a display with all but a certain position grayed out so the
@@ -172,6 +183,8 @@ player_ghost_summary %>%
   labs(x = "Sum change Pr(1st down)",
        y = "Sum change Pr(TD)",
        color = "Safety type")
+
+
 
 # Create tables of rankings -----------------------------------------------
 

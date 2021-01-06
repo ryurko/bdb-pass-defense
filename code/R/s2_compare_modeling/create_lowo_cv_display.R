@@ -92,6 +92,6 @@ new_crps_plot <- crps_plot + theme(legend.position = "none",
 
 (new_crps_plot / rmse_plot) +
   plot_annotation(title = "Observe best holdout performance using RFCDE with two closest defenders",
-                  subtitle = "Red points denote mean values")
+                  subtitle = "Individual points denote holdout weeks; red points denote mean values")
 
 
