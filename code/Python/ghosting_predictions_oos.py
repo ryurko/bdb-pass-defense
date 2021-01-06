@@ -1,63 +1,81 @@
-from keras.models import load_model
+import pyreadr
 import pandas as pd
 import numpy as np
-import sys
+import seaborn as sns
+import matplotlib.pyplot as plt
 
-models = []
+weekly_data = []
+
+ghosts = pd.read_csv("ghosts_at_catch.csv")
+
+defender_1 = []
+defender_2 = []
+defender_3 = []
+defender_4 = []
 
 for w in range(1,18):
-    m = [f for f in sorted(os.listdir('traj_models_def_seq2seq/week='+str(w)+'-batch=128-seq_len=1-LSTMunits=32-LSTMlayers=3-dropout=0.2/')) if 'hdf5' in f][-1]
-    models.append(keras.models.load_model('traj_models_def_seq2seq/week='+str(w)+'-batch=128-seq_len=1-LSTMunits=32-LSTMlayers=3-dropout=0.2/'+m))
+    result = pyreadr.read_r('../input/create-weekly-model-datasets/week_'+str(w)+'_model_data.rds')[None]
+    result = result[result['is_start_bc'] == 1].reset_index(drop=True)
+    data = pd.merge(result,ghosts, on =['game_play_id']).reset_index(drop=True)
+    defender_1 += [np.linalg.norm(np.array(data[['defense_1_x','defense_1_y']].iloc[i]) - np.array(data[['defense_1_x_ghost','defense_1_y_ghost']].iloc[i])) for i in range(len(data)) ]
+    defender_2 += [np.linalg.norm(np.array(data[['defense_2_x','defense_2_y']].iloc[i]) - np.array(data[['defense_2_x_ghost','defense_2_y_ghost']].iloc[i])) for i in range(len(data)) ]
+    defender_3 += [np.linalg.norm(np.array(data[['defense_3_x','defense_3_y']].iloc[i]) - np.array(data[['defense_3_x_ghost','defense_3_y_ghost']].iloc[i])) for i in range(len(data)) ]
+    defender_4 += [np.linalg.norm(np.array(data[['defense_4_x','defense_4_y']].iloc[i]) - np.array(data[['defense_4_x_ghost','defense_4_y_ghost']].iloc[i])) for i in range(len(data)) ]
+    
+    
+df1 = pd.DataFrame({"Distance (yards)":defender_1,"Defender":['Closest' for _ in range(len(defender_1))]})
+df2 = pd.DataFrame({"Distance (yards)":defender_2,"Defender":['Second closest' for _ in range(len(defender_2))]})
+df3 = pd.DataFrame({"Distance (yards)":defender_3,"Defender":['Third closest' for _ in range(len(defender_3))]})
+df4 = pd.DataFrame({"Distance (yards)":defender_4,"Defender":['Fourth closest' for _ in range(len(defender_4))]})
+df = pd.concat([df1,df2,df3,df4])
 
 
-
-data = pd.read_csv("completed_pass_plays.csv")
-data = data[(data['dir'].notnull()) | (data['team'] == "football")]
-data['x'] = data['x']/120.0
-data['y'] = data['y']/53.3
-data['s'] = data['s']/max(data['s'])
-data['a'] = data['a']/max(data['a'])
-data['o'] = data['o']/max(data['o'])
-data['dir'] = data['dir']/max(data['dir'])
-#data['ghost_X'] = list(np.zeros(len(data)))
-#data['ghost_Y'] = list(np.zeros(len(data)))
-games = pd.read_csv("games.csv")
-games_d = dict(zip(list(games['gameId']), list(games['week']))) 
-week = [games_d[i] for i in list(data['gameId'])]
-data['week'] = week
-plays=data.groupby(by=["key"])
-pii = 0
-
-ghosts_df = pd.DataFrame(columns = list(data.columns))
-
-ghosts_X = []
-ghosts_Y = []
-
-for p in set(data['key']):
-    try:
-        
-        tmp = plays.get_group(p)
-        tmp_0 = tmp[tmp['event'] == "pass_forward"]
-        tmp_1 = tmp[tmp['event'] == "pass_outcome_caught"]
-        
-        pos0 = tmp_0[tmp_0.position.isin(defense)].reset_index()
-        ball = tmp_1[tmp_1.team == "football"]
-        for d in range(len(pos0)):
-            x_f = []
-            x_f = list(np.array(pos0.iloc[d][['x','y','s','dir']]).reshape((4,)))
-            defender_id = pos0.iloc[d]['nflId'] 
-            x_f += list(np.array(ball[ball.team=="football"][['x','y']]).reshape((2,)))
-            X_train[pii,:] = np.array(x_f) 
-            pred= np.multiply(models[int(ball['week'])-1].predict(np.array([X_train[pii]]).reshape(1,1,6)),np.array([120,53.3]))
-            ghosts_X.append(pred[0][0])
-            ghosts_Y.append(pred[0][1])
-            ghosts_df = ghosts_df.append(tmp_1[tmp_1.nflId == defender_id],ignore_index=True)
-            pii += 1
-    except Exception as e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        print(exc_type, exc_tb.tb_lineno)
+fig = plt.figure()
 
 
-ghosts_df['x'] = ghosts_df['x']*120.0
-ghosts_df['y'] = ghosts_df['y']*53.3
-ghosts_df.to_csv('ghosts.csv',index=False)
+fig.suptitle('Distribution of distance between ghosts and\n actual defenders from all the plays', fontsize=13)
+
+ax = fig
+ax = sns.violinplot(x="Defender", y="Distance (yards)", data=df)
+
+fig.savefig("violin.png")    
+
+## estimate per week
+
+d1 = []
+d2 = []
+d3 = []
+d4 = []
+
+for w in range(1,18):
+    defender_1 = []
+    defender_2 = []
+    defender_3 = []
+    defender_4 = []
+    result = pyreadr.read_r('../input/create-weekly-model-datasets/week_'+str(w)+'_model_data.rds')[None]
+    result = result[result['is_start_bc'] == 1].reset_index(drop=True)
+    data = pd.merge(result,ghosts, on =['game_play_id']).reset_index(drop=True)
+    defender_1 += [np.linalg.norm(np.array(data[['defense_1_x','defense_1_y']].iloc[i]) - np.array(data[['defense_1_x_ghost','defense_1_y_ghost']].iloc[i])) for i in range(len(data)) ]
+    defender_2 += [np.linalg.norm(np.array(data[['defense_2_x','defense_2_y']].iloc[i]) - np.array(data[['defense_2_x_ghost','defense_2_y_ghost']].iloc[i])) for i in range(len(data)) ]
+    defender_3 += [np.linalg.norm(np.array(data[['defense_3_x','defense_3_y']].iloc[i]) - np.array(data[['defense_3_x_ghost','defense_3_y_ghost']].iloc[i])) for i in range(len(data)) ]
+    defender_4 += [np.linalg.norm(np.array(data[['defense_4_x','defense_4_y']].iloc[i]) - np.array(data[['defense_4_x_ghost','defense_4_y_ghost']].iloc[i])) for i in range(len(data)) ]
+    d1.append(np.nanmean(defender_1))
+    d2.append(np.nanmean(defender_2))
+    d3.append(np.nanmean(defender_3))
+    d4.append(np.nanmean(defender_4))
+    
+df1 = pd.DataFrame({"Distance (yards)":d1,"Defender":['Closest' for _ in range(len(d1))]})
+df2 = pd.DataFrame({"Distance (yards)":d2,"Defender":['Second closest' for _ in range(len(d2))]})
+df3 = pd.DataFrame({"Distance (yards)":d3,"Defender":['Third closest' for _ in range(len(d3))]})
+df4 = pd.DataFrame({"Distance (yards)":d4,"Defender":['Fourth closest' for _ in range(len(d4))]})
+df = pd.concat([df1,df2,df3,df4])
+
+fig = plt.figure()
+
+axs = fig
+plt.ylim(0,15)
+
+fig.suptitle('Average distance between ghosts and defenders. \n Each point corresponds to a week', fontsize=13)
+
+axs = sns.swarmplot(x="Defender", y="Distance (yards)", data=df)
+fig.savefig("swarmplot.png")
