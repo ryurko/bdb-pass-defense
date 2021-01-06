@@ -7,7 +7,8 @@ library(patchwork)
 # Load the summary of ghosting evaluation ---------------------------------
 
 ghost_yac_distr_summary <-
-  read_rds("data/ghosting_output/player_ghost_speed_dir_yac_distr_summary.rds")
+  # read_rds("data/ghosting_output/player_ghost_speed_dir_yac_distr_summary.rds")
+  read_rds("data/ghosting_output/player_ghost_speed_dir_yac_distr_summary_upd.rds")
 
 
 # Load players data to join info ------------------------------------------
@@ -80,22 +81,25 @@ yac_change_plot <- player_ghost_summary %>%
   ggplot(aes(x = total_yac_diff, y = total_prob_pos_yac_diff,
              color = position_easy)) +
   geom_point() +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "darkred") +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "darkred") +
   geom_label_repel(data = player_ghost_summary %>%
+                     filter(position_easy %in% c("Cornerback", "Safety",
+                                                 "Linebacker")) %>%
+                     group_by(position_easy) %>%
                      #filter(n_plays >= 50) %>%
                      arrange(total_yac_diff) %>%
-                     slice(1:10),
+                     slice(1:3),
                    aes(label = player_display_name,
                        color = position_easy),
                    min.segment.length = 0, box.padding = 1,
                    show.legend = FALSE) +
-  annotate(geom = "text", label = 'Positioned "better" than ghosts', x = -50, y = -15,
+  annotate(geom = "text", label = 'Positioned "better" than ghosts', x = -25, y = -7.5,
            color = "darkred") +
   theme_bw() +
   ggthemes::scale_color_colorblind() +
   guides(color = guide_legend(override.aes = list(size = 4))) +
   theme(legend.position = "bottom") +
-  geom_vline(xintercept = 0, linetype = "dashed", color = "darkred") +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "darkred") +
   labs(x = "Sum of change in expected YAC",
        y = "Sum of change in Pr(YAC > 0)",
        color = "Position")
@@ -105,9 +109,15 @@ prob_change_plot <- player_ghost_summary %>%
   ggplot(aes(x = total_prob_first_down_diff, y = total_prob_td_diff,
              color = position_easy)) +
   geom_point() +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "darkred") +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "darkred") +
   geom_label_repel(data = player_ghost_summary %>%
+                     filter(position_easy %in% c("Cornerback", "Safety",
+                                                 "Linebacker")) %>%
+                     group_by(position_easy) %>%
+                     #filter(n_plays >= 50) %>%
                      arrange(total_prob_first_down_diff) %>%
-                     slice(1:10),
+                     slice(1:3),
                    aes(label = player_display_name,
                        color = position_easy),
                    min.segment.length = 0, box.padding = 1,
@@ -116,8 +126,6 @@ prob_change_plot <- player_ghost_summary %>%
   ggthemes::scale_color_colorblind() +
   guides(color = guide_legend(override.aes = list(size = 4))) +
   theme(legend.position = "bottom") +
-  geom_vline(xintercept = 0, linetype = "dashed", color = "darkred") +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "darkred") +
   labs(x = "Sum of change in Pr(1st down)",
        y = "Sum of change in Pr(TD)",
        color = "Position")
@@ -126,7 +134,7 @@ yac_change_plot_new <- yac_change_plot + theme(legend.position = "none")
 
 (yac_change_plot_new / prob_change_plot) +
   plot_annotation(title = "Comparison of player performance based on summaries of estimates for YAC distribution",
-                  subtitle = "Top 10 players based on change in expected YAC and Pr(1st down) are labeled")
+                  subtitle = "Top three players by position based on change in expected YAC and Pr(1st down) are labeled")
 
 
 
@@ -246,6 +254,72 @@ player_ghost_summary %>%
   ) %>%
   tab_header(title = "Top players based on overall reduction in Pr(1st down)",
              subtitle = "Top five players by position") %>%
+  tab_style(
+    style = list(
+      cell_borders(
+        sides = "right",
+        color = "black",
+        weight = px(3)
+      )
+    ),
+    locations = list(
+      cells_body(
+        columns = vars(`#plays`)
+      )
+    )
+  ) %>%
+  data_color(columns = vars(`Sum change Pr(1st down)`,
+                            `Sum change Pr(YAC > 0)`,
+                            `Sum change expected YAC`),
+             colors = scales::col_numeric(
+               palette = c("darkorange", "darkblue"),
+               domain = NULL
+             ))
+
+
+# Create table with bottom five players in each position ---------------------
+
+player_ghost_summary %>%
+  filter(position_easy %in% c("Cornerback", "Safety",
+                              "Linebacker")) %>%
+  group_by(position_easy) %>%
+  arrange(desc(pos_fd_rank)) %>%
+  slice(1:5) %>%
+  #mutate(position_easy = fct_rev(position_easy)) %>%
+  dplyr::select(player_display_name, team_abbr, position_easy,
+                n_plays, total_prob_first_down_diff,
+                total_yac_diff,
+                total_prob_pos_yac_diff,
+                #total_prob_td_diff,
+                all_fd_rank, pos_fd_rank,
+                all_xyac_rank, all_posyac_rank, all_td_rank) %>%
+  mutate(total_prob_first_down_diff = round(total_prob_first_down_diff,
+                                            digits = 2),
+         total_yac_diff = round(total_yac_diff, digits = 2),
+         total_prob_pos_yac_diff = round(total_prob_pos_yac_diff,
+                                         digits = 2)) %>%
+  group_by(position_easy) %>%
+  arrange(desc(all_fd_rank)) %>%
+  dplyr::select(-pos_fd_rank) %>%
+  rename(Player = player_display_name,
+         Position = position_easy,
+         Team = team_abbr,
+         `#plays` = n_plays,
+         `Overall rank Pr(1st down)` = all_fd_rank,
+         `Sum change Pr(1st down)` = total_prob_first_down_diff,
+         `Sum change Pr(YAC > 0)` = total_prob_pos_yac_diff,
+         `Sum change expected YAC` = total_yac_diff,
+         #`Sum Pr(TD) change` = total_prob_td_diff,
+         `Overall rank Pr(TD)` = all_td_rank,
+         `Overall rank expected YAC` = all_xyac_rank,
+         `Overall rank Pr(YAC > 0)` = all_posyac_rank) %>%
+  gt() %>%
+  row_group_order(
+    groups = c("Linebacker", "Cornerback",
+               "Safety")
+  ) %>%
+  tab_header(title = "Worst players based on overall reduction in Pr(1st down)",
+             subtitle = "Bottom five players by position") %>%
   tab_style(
     style = list(
       cell_borders(

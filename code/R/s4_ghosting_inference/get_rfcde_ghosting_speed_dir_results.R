@@ -238,7 +238,7 @@ ghost_yac_distr_summary <-
   map_dfr(1:17,
           function(week_i) {
 
-            # week_i <- 1
+            #week_i <- 12
             #print(paste0("STARTING WEEK ", week_i))
 
             # First init the week data only using its plays and players
@@ -260,7 +260,7 @@ ghost_yac_distr_summary <-
               map_dfr(candidate_player_ids,
                       function(player_id) {
 
-                        # player_id <- 2558184
+                        #player_id <- 2552385
                         #print(player_id)
 
                         # Filter to the plays with this player:
@@ -276,9 +276,10 @@ ghost_yac_distr_summary <-
 
                         # Now join the new positions for the player for each play:
                         wide_plays_data <- long_plays_data %>%
-                          dplyr::left_join(dplyr::select(week_ghosting_data,
-                                                         game_play_id, old_rank,
-                                                         new_adj_x, new_adj_y),
+                          dplyr::left_join(week_ghosting_data %>%
+                                             filter(nflId == player_id) %>%
+                                             dplyr::select(game_play_id, old_rank,
+                                                           new_adj_x, new_adj_y),
                                            by = c("game_play_id", "old_rank")) %>%
                           # now update the variables from before:
                           mutate(adj_x = ifelse(is.na(new_adj_x), old_adj_x, new_adj_x),
@@ -434,7 +435,8 @@ ghost_yac_distr_summary <-
 
 # Save the output:
 write_rds(ghost_yac_distr_summary,
-          "data/ghosting_output/player_ghost_speed_dir_yac_distr_summary.rds")
+          #"data/ghosting_output/player_ghost_speed_dir_yac_distr_summary.rds")
+          "data/ghosting_output/player_ghost_speed_dir_yac_distr_summary_upd.rds")
 
 
 
