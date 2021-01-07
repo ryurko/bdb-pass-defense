@@ -45,9 +45,11 @@ lowo_cv_summary <-
               map_dfr(1:nrow(test_data),
                       function(test_i) {
 
-                        # what's the maximum possible distance the ball carrier can travel
-                        # and round up:
-                        max_possible_gain <- round(test_data$adj_bc_x[test_i])
+                        # What's the distance from the endzone:
+                        obs_max_x <- test_data$adj_bc_x[test_i]
+
+                        # Create a maximum possible gain with padding of 2 yards
+                        max_possible_gain <- round(obs_max_x) + 2
 
                         # Now make a grid of values given the minimum observed in the whole
                         # data in increments of half yards to start:
@@ -68,6 +70,13 @@ lowo_cv_summary <-
                         # gained with its density estimate
                         tibble(pred_yards_gain = gain_predict_grid,
                                test_cde = as.numeric(test_cde_pred)) %>%
+                          # Cap the pred_yards_gain so the limit is set to be
+                          # the obs_max_x:
+                          mutate(pred_yards_gain = pmin(pred_yards_gain, obs_max_x)) %>%
+                          # Sum the rows in the padding above:
+                          group_by(pred_yards_gain) %>%
+                          summarize(test_cde = sum(test_cde, na.rm = TRUE)) %>%
+                          ungroup() %>%
                           # Add column for predicted CDF:
                           mutate(test_cdf = cumsum(test_cde / sum(test_cde)),
                                  # Finally with the test row index and observed yards gained:
@@ -93,24 +102,7 @@ lowo_cv_summary <-
 # Save these results ------------------------------------------------------
 
 write_csv(lowo_cv_summary,
-          "data/model_output/lowo_cv_results/plugin_npcde_crps_summary.csv")
+          "data/model_output/lowo_cv_results/plugin_npcde_crps_summary_w_padding.csv")
 
 
-# Compare to RFCDE --------------------------------------------------------
-
-# rfcde_lowo_cv_summary <-
-#   read_csv("data/model_output/lowo_cv_results/rfcde_crps_summary.csv")
-#
-# lowo_cv_summary %>%
-#   mutate(n_close_players = 0) %>%
-#   bind_rows(rfcde_lowo_cv_summary) %>%
-#   mutate(n_close_players = n_close_players - 1) %>%
-#   ggplot(aes(x = n_close_players, y = test_crps)) +
-#   geom_beeswarm(color = "darkblue") +
-#   stat_summary(fun = "mean", color = "darkorange", size = 3, geom = "point") +
-#   theme_bw() +
-#   labs(x = "Number of defense / offense players included by distance",
-#        y = "Holdout CRPS")
-
-# That's pretty interesting...
 

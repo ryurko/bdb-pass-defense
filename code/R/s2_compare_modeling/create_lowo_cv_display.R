@@ -9,7 +9,7 @@ library(patchwork)
 
 # Baseline:
 lowo_cv_summary_np <-
-  read_csv("data/model_output/lowo_cv_results/plugin_npcde_crps_summary.csv")
+  read_csv("data/model_output/lowo_cv_results/plugin_npcde_crps_summary_w_padding.csv")
 
 # RFCDE:
 lowo_cv_summary_rfcde <-
