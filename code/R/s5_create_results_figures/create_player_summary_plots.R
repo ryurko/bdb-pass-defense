@@ -8,7 +8,8 @@ library(patchwork)
 
 ghost_yac_distr_summary <-
   # read_rds("data/ghosting_output/player_ghost_speed_dir_yac_distr_summary.rds")
-  read_rds("data/ghosting_output/player_ghost_speed_dir_yac_distr_summary_upd.rds")
+  #read_rds("data/ghosting_output/player_ghost_speed_dir_yac_distr_summary_upd.rds")
+  read_rds("data/ghosting_output/player_ghost_full_yac_distr_summary_w_padding.rds")
 
 
 # Load players data to join info ------------------------------------------
@@ -224,13 +225,15 @@ player_ghost_summary %>%
                 n_plays, total_prob_first_down_diff,
                 total_yac_diff,
                 total_prob_pos_yac_diff,
-                #total_prob_td_diff,
+                total_prob_td_diff,
                 all_fd_rank, pos_fd_rank,
                 all_xyac_rank, all_posyac_rank, all_td_rank) %>%
   mutate(total_prob_first_down_diff = round(total_prob_first_down_diff,
                                             digits = 2),
          total_yac_diff = round(total_yac_diff, digits = 2),
          total_prob_pos_yac_diff = round(total_prob_pos_yac_diff,
+                                         digits = 2),
+         total_prob_td_diff = round(total_prob_td_diff,
                                          digits = 2)) %>%
   group_by(position_easy) %>%
   arrange(all_fd_rank) %>%
@@ -243,7 +246,7 @@ player_ghost_summary %>%
          `Sum change Pr(1st down)` = total_prob_first_down_diff,
          `Sum change Pr(YAC > 0)` = total_prob_pos_yac_diff,
          `Sum change expected YAC` = total_yac_diff,
-         #`Sum Pr(TD) change` = total_prob_td_diff,
+         `Sum change Pr(TD)` = total_prob_td_diff,
          `Overall rank Pr(TD)` = all_td_rank,
          `Overall rank expected YAC` = all_xyac_rank,
          `Overall rank Pr(YAC > 0)` = all_posyac_rank) %>%
@@ -252,8 +255,8 @@ player_ghost_summary %>%
     groups = c("Linebacker", "Cornerback",
                "Safety")
   ) %>%
-  tab_header(title = "Top players based on overall reduction in Pr(1st down)",
-             subtitle = "Top five players by position") %>%
+  tab_header(title = "Top five players (by position) based on overall reduction in Pr(1st down)",
+             subtitle = "Lower values indicated by orange cells indicate better defensive performance than expected ghosts") %>%
   tab_style(
     style = list(
       cell_borders(
@@ -270,7 +273,8 @@ player_ghost_summary %>%
   ) %>%
   data_color(columns = vars(`Sum change Pr(1st down)`,
                             `Sum change Pr(YAC > 0)`,
-                            `Sum change expected YAC`),
+                            `Sum change expected YAC`,
+                            `Sum change Pr(TD)`),
              colors = scales::col_numeric(
                palette = c("darkorange", "darkblue"),
                domain = NULL
@@ -290,14 +294,16 @@ player_ghost_summary %>%
                 n_plays, total_prob_first_down_diff,
                 total_yac_diff,
                 total_prob_pos_yac_diff,
-                #total_prob_td_diff,
+                total_prob_td_diff,
                 all_fd_rank, pos_fd_rank,
                 all_xyac_rank, all_posyac_rank, all_td_rank) %>%
   mutate(total_prob_first_down_diff = round(total_prob_first_down_diff,
                                             digits = 2),
          total_yac_diff = round(total_yac_diff, digits = 2),
          total_prob_pos_yac_diff = round(total_prob_pos_yac_diff,
-                                         digits = 2)) %>%
+                                         digits = 2),
+         total_prob_td_diff = round(total_prob_td_diff,
+                                    digits = 2)) %>%
   group_by(position_easy) %>%
   arrange(desc(all_fd_rank)) %>%
   dplyr::select(-pos_fd_rank) %>%
@@ -309,7 +315,7 @@ player_ghost_summary %>%
          `Sum change Pr(1st down)` = total_prob_first_down_diff,
          `Sum change Pr(YAC > 0)` = total_prob_pos_yac_diff,
          `Sum change expected YAC` = total_yac_diff,
-         #`Sum Pr(TD) change` = total_prob_td_diff,
+         `Sum change Pr(TD)` = total_prob_td_diff,
          `Overall rank Pr(TD)` = all_td_rank,
          `Overall rank expected YAC` = all_xyac_rank,
          `Overall rank Pr(YAC > 0)` = all_posyac_rank) %>%
@@ -318,8 +324,8 @@ player_ghost_summary %>%
     groups = c("Linebacker", "Cornerback",
                "Safety")
   ) %>%
-  tab_header(title = "Worst players based on overall reduction in Pr(1st down)",
-             subtitle = "Bottom five players by position") %>%
+  tab_header(title = "Bottom five players (by position) based on overall reduction in Pr(1st down)",
+             subtitle = "Lower values indicated by orange cells indicate better defensive performance than expected ghosts") %>%
   tab_style(
     style = list(
       cell_borders(
@@ -336,7 +342,8 @@ player_ghost_summary %>%
   ) %>%
   data_color(columns = vars(`Sum change Pr(1st down)`,
                             `Sum change Pr(YAC > 0)`,
-                            `Sum change expected YAC`),
+                            `Sum change expected YAC`,
+                            `Sum change Pr(TD)`),
              colors = scales::col_numeric(
                palette = c("darkorange", "darkblue"),
                domain = NULL

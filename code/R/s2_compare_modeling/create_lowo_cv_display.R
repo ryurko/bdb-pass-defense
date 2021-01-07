@@ -13,7 +13,7 @@ lowo_cv_summary_np <-
 
 # RFCDE:
 lowo_cv_summary_rfcde <-
-  read_csv("data/model_output/lowo_cv_results/rfcde_crps_summary_with_abs_val.csv")
+  read_csv("data/model_output/lowo_cv_results/rfcde_crps_summary_with_padding.csv")
 
 
 # View the results --------------------------------------------------------

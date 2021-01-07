@@ -4,32 +4,34 @@
 
 library(tidyverse)
 library(RFCDE)
+library(cowplot)
 
 # Load the summary of ghosting evaluation ---------------------------------
 
 ghost_yac_distr_summary <-
-  read_rds("data/ghosting_output/player_ghost_speed_dir_yac_distr_summary.rds")
+  read_rds("data/ghosting_output/player_ghost_full_yac_distr_summary_w_padding.rds")
 
 ghost_yac_distr_summary %>%
-  filter(player_display_name == "Adrian Amos") %>%
+  filter(player_display_name == "Kyle Fuller") %>%
   arrange(delta_prob_first_down) %>%
   dplyr::select(week_id, game_play_id, player_display_name, nfl_id,
-                prob_first_down, new_prob_first_down, delta_prob_first_down)
+                prob_first_down, new_prob_first_down, delta_prob_first_down,
+                prob_td, new_prob_td, delta_prob_td)
 
-# # A tibble: 165 x 7
-#       week_id game_play_id    player_display_name  nfl_id prob_first_down new_prob_first_down delta_prob_first_down
-#         <int> <chr>           <chr>                 <dbl>           <dbl>               <dbl>                 <dbl>
-#     1      12 2018112200_108  Adrian Amos         2552385          0.0839               0.723                -0.639
-#     2       6 2018101404_1507 Adrian Amos         2552385          0.150                0.758                -0.608
-#     3       6 2018101404_362  Adrian Amos         2552385          0.204                0.766                -0.562
-#     4      13 2018120207_3637 Adrian Amos         2552385          0.403                0.923                -0.520
-#     5      16 2018122312_1293 Adrian Amos         2552385          0.0719               0.560                -0.489
-#     6       6 2018101404_2505 Adrian Amos         2552385          0.0318               0.486                -0.454
-#     7       9 2018110401_279  Adrian Amos         2552385          0.0534               0.492                -0.438
-#     8      12 2018112200_3793 Adrian Amos         2552385          0.0480               0.483                -0.435
-#     9       1 2018090912_2348 Adrian Amos         2552385          0.187                0.606                -0.419
-#    10      14 2018120901_2960 Adrian Amos         2552385          0.0347               0.425                -0.390
+# w   eek_id game_play_id    player_display_name  nfl_id prob_first_down new_prob_first_down delta_prob_first_down
+#       <int> <chr>           <chr>                 <dbl>           <dbl>               <dbl>                 <dbl>
+#   1       7 2018102102_2806 Kyle Fuller         2543681          0.0829               0.891                -0.808
+#   2       4 2018093001_2524 Kyle Fuller         2543681          0.100                0.707                -0.607
+#   3       6 2018101404_1507 Kyle Fuller         2543681          0.150                0.629                -0.479
+#   4       7 2018102102_3732 Kyle Fuller         2543681          0.0587               0.516                -0.457
+#   5      16 2018122312_2134 Kyle Fuller         2543681          0.0739               0.455                -0.381
+#   6      11 2018111802_3629 Kyle Fuller         2543681          0.0292               0.384                -0.355
+#   7      11 2018111802_2478 Kyle Fuller         2543681          0.0305               0.368                -0.338
+#   8       4 2018093001_3823 Kyle Fuller         2543681          0.0623               0.384                -0.322
+#   9      11 2018111802_540  Kyle Fuller         2543681          0.0356               0.342                -0.307
+#  10      15 2018121603_3868 Kyle Fuller         2543681          0.0354               0.326                -0.291
 
+# Previously looked at example for Jaire Alexander (2560952): 2018091602_4551
 
 # Generate the LOWO model -------------------------------------------------
 
@@ -75,7 +77,7 @@ yac_model_vars <- c(bc_var_names, play_context_var_names,
 
 # Init the training data
 train_data_matrix <- model_data %>%
-  filter(week_id != 12) %>%
+  filter(week_id != 7) %>%
   dplyr::select(yac_model_vars) %>%
   # Convert to matrix
   as.matrix()
@@ -86,7 +88,7 @@ train_data_matrix <- train_data_matrix[train_data_use_i,]
 
 # Train data response:
 train_data_resp <- model_data %>%
-  filter(week_id != 12) %>%
+  filter(week_id != 7) %>%
   pull(end_x_change)
 train_data_resp <- train_data_resp[train_data_use_i]
 
@@ -97,17 +99,17 @@ train_rfcde <- RFCDE(train_data_matrix, train_data_resp)
 # Load the initial YAC pred data ------------------------------------------
 
 init_rfcde_pred_yac_data <-
-  read_rds("data/model_output/lowo_rfcde_pred_yac_data.rds")
+  read_rds("data/model_output/lowo_rfcde_pred_yac_data_w_padding.rds")
 
 # Get the data for this play:
 ex_play_cde <- init_rfcde_pred_yac_data %>%
-  filter(game_play_id == "2018112200_108")
+  filter(game_play_id == "2018102102_2806")
 
 
 # Load the ghosting to generate new cde -----------------------------------
 
 ghosting_data <-
-  read_csv("data/ghosting_output/ghosts_at_catch_speed_dir.csv")
+  read_csv("data/ghosting_output/ghosts_at_catch_full_upd.csv")
 
 # Next load the original weekly data information containing info on the players
 # involved - to join to this ghosting data
@@ -166,16 +168,16 @@ long_def_model_data <-
   filter(game_play_id %in% unique(long_ghosting_data$game_play_id))
 
 long_example_play_def_data <- long_def_model_data %>%
-  filter(game_play_id == "2018112200_108")
+  filter(game_play_id == "2018102102_2806")
 
-# Get the ghosting coordinates for Adrian Amos for this play
-ex_play_amos_data <- long_ghosting_data %>%
-  filter(game_play_id == "2018112200_108",
-         displayName == "Adrian Amos")
+# Get the ghosting coordinates for Kyle Fuller for this play
+ex_play_fuller_data <- long_ghosting_data %>%
+  filter(game_play_id == "2018102102_2806",
+         displayName == "Kyle Fuller")
 
 # Now join the new positions for the play
 ex_play_wide_plays_data <- long_example_play_def_data %>%
-              dplyr::left_join(dplyr::select(ex_play_amos_data,
+              dplyr::left_join(dplyr::select(ex_play_fuller_data,
                                              game_play_id, old_rank,
                                              new_adj_x, new_adj_y),
                                by = c("game_play_id", "old_rank")) %>%
@@ -222,7 +224,7 @@ ex_play_wide_plays_data <- long_example_play_def_data %>%
 # Now want to join these updated covariates back with the old ones
 # to then get a new dataset to generate predictions for:
 ex_play_new_model_data <- model_data %>%
-  filter(game_play_id == "2018112200_108") %>%
+  filter(game_play_id == "2018102102_2806") %>%
   dplyr::select(game_play_id,
                 setdiff(colnames(model_data),
                         colnames(ex_play_wide_plays_data))) %>%
@@ -234,18 +236,13 @@ new_play_data_matrix <- ex_play_new_model_data %>%
   dplyr::select(yac_model_vars) %>%
   # Convert to matrix
   as.matrix()
-#   # Get the indices of the complete cases to use
-# new_play_data_matrix <- as.matrix(t(new_data_matrix[new_data_use_i,]))
-#             } else {
-#               new_data_matrix <- new_data_matrix[new_data_use_i,]
-#             }
 
 # New data response:
 new_play_data_resp <- ex_play_new_model_data %>% pull(end_x_change)
 
-# what's the maximum possible distance the ball carrier can travel
-# and round up:
-new_play_max_possible_gain <- round(new_play_data_matrix[[1, "adj_bc_x"]])
+# what's the maximum possible distance the ball carrier can travel (w/ padding)
+new_obs_max_x <- new_play_data_matrix[[1, "adj_bc_x"]]
+new_play_max_possible_gain <- round(new_obs_max_x) + 2
 
 # Now make a grid of values given the minimum observed in the whole
 # data in increments of half yards to start:
@@ -262,7 +259,14 @@ new_play_cde_pred <- predict(train_rfcde, new_play_data_matrix,
 # gained with its density estimate
 new_rfcde_pred_yac_data <-
   tibble(pred_yards_gain = new_play_gain_predict_grid,
-       play_cde = as.numeric(new_play_cde_pred)) %>%
+       play_cde = as.numeric(new_play_cde_pred))  %>%
+  # Cap the pred_yards_gain so the limit is set to be
+  # the obs_max_x:
+  mutate(pred_yards_gain = pmin(pred_yards_gain, new_obs_max_x)) %>%
+  # Sum the rows in the padding above:
+  group_by(pred_yards_gain) %>%
+  summarize(play_cde = sum(play_cde, na.rm = TRUE)) %>%
+  ungroup() %>%
   # Add column for predicted CDF:
   mutate(play_cdf = cumsum(play_cde / sum(play_cde)),
          # Finally with the test row index and observed yards gained:
@@ -273,21 +277,27 @@ new_rfcde_pred_yac_data <-
 # Load the actual tracking data to display --------------------------------
 
 raw_play_tracking_data <-
-  read_csv("data/input/weekly_raw_tracking/week12.csv") %>%
-  filter(gameId == 2018112200, playId == 108)
+  read_csv("data/input/weekly_raw_tracking/week7.csv") %>%
+  filter(gameId == 2018102102, playId == 2806)
 
 # Filter to when the pass is caught:
 play_at_catch_tracking_data <- raw_play_tracking_data %>%
   filter(event == "pass_outcome_caught") %>%
   # Create a column denoting special roles:
   mutate(player_role =
-           case_when(nflId == 2543646 ~ "bc",
-                     nflId == 2552385 ~ "def",
+           case_when(nflId == 2530515 ~ "bc",
+                     nflId == 2543681 ~ "def",
                      is.na(nflId) ~ "football",
-                     TRUE ~ "other"))
+                     TRUE ~ "other"),
+         # Split between remaining offense and defense:
+         # (in this play away is offense, home is defense)
+         team_side = ifelse(team == "away", "offense", "defense"),
+         player_role = ifelse(player_role == "other",
+                              paste0(player_role, "_", team_side),
+                              player_role))
 
 
-#  velocity angle in radians
+#  velocity angle in radians (followed example here: https://github.com/asonty/ngs_highlights/blob/master/utils/scripts/plot_utils.R)
 play_at_catch_tracking_data$dir_rad <- play_at_catch_tracking_data$dir * pi / 180
 
 #  velocity components
@@ -299,9 +309,11 @@ play_at_catch_tracking_data$v_y <- cos(play_at_catch_tracking_data$dir_rad) *
 receiver_tracking_data <- play_at_catch_tracking_data %>%
   filter(player_role == "bc")
 
+def_tracking_data <- play_at_catch_tracking_data %>%
+  filter(player_role == "def")
 
 
-amos_starting_data <- play_at_catch_tracking_data
+#fuller_starting_data <- play_at_catch_tracking_data
 
 # Create the tracking data display ----------------------------------------
 
@@ -320,53 +332,66 @@ df_hash <- expand.grid(x = c(0, 23.36667, 29.96667, xmax), y = (10:110))
 df_hash <- df_hash %>% filter(!(floor(y %% 5) == 0))
 df_hash <- df_hash %>% filter(y < ymax, y > ymin)
 
+# Use the play direction to determine the first down marker location:
+x_first_down_marker <- ifelse(receiver_tracking_data$playDirection == "right",
+                                 receiver_tracking_data$x + ex_play_new_model_data$adj_bc_x_from_first_down,
+                                 receiver_tracking_data$x - ex_play_new_model_data$adj_bc_x_from_first_down)
+# Repeat for ghost coordinates:
+def_ghost_x <- ifelse(receiver_tracking_data$playDirection == "right",
+                      ex_play_fuller_data$x_ghost,
+                      120 - ex_play_fuller_data$x_ghost)
+def_ghost_y <- ifelse(receiver_tracking_data$playDirection == "right",
+                      ex_play_fuller_data$y_ghost,
+                      (160 / 3) - ex_play_fuller_data$y_ghost)
+
+
+# Now create the plot:
 at_catch_plot <- ggplot() +
-  annotate("text", y = df_hash$x[df_hash$x < 55/2],
+  annotate("rect", xmin = 0, xmax = 120, ymin = 0, ymax = 160/3, alpha = 0.4,
+           color = "gray", fill = "darkgreen") +
+  annotate("text", y = df_hash$x[df_hash$x < 55/2], alpha = 0.75, color = "white",
            x = df_hash$y[df_hash$x < 55/2], label = "|", vjust = -0.3, hjust = 0.4) +
-  annotate("text", y = df_hash$x[df_hash$x > 55/2],
+  annotate("text", y = df_hash$x[df_hash$x > 55/2], alpha = 0.75, color = "white",
            x = df_hash$y[df_hash$x > 55/2], label = "|", vjust = 1, hjust = 0.4) +
   annotate("segment", y = xmin,
            x = seq(max(10, ymin), min(ymax, 110), by = 5),
-           yend =  xmax,
-           xend = seq(max(10, ymin), min(ymax, 110), by = 5)) +
-  annotate("text", y = rep(hash_left, 11), x = seq(10, 110, by = 10),
+           yend =  xmax, color = "white",
+           xend = seq(max(10, ymin), min(ymax, 110), by = 5), alpha = 0.75) +
+  annotate("text", y = rep(hash_left, 11), x = seq(10, 110, by = 10), alpha = 0.75,
            label = c("   G", seq(10, 50, by = 10), rev(seq(10, 40, by = 10)), "G   "),
-           angle = 0, size = 4) +
+           angle = 0, size = 4, color = "white") +
   annotate("text", y = rep((xmax - hash_left), 11), x = seq(10, 110, by = 10),
            label = c("G   ", seq(10, 50, by = 10), rev(seq(10, 40, by = 10)), "   G"),
-           angle = 180, size = 4) +
+           angle = 180, size = 4, alpha = 0.75, color = "white") +
   annotate("segment", y = c(xmin, xmin, xmax, xmax),
            x = c(ymin, ymax, ymax, ymin),
            yend = c(xmin, xmax, xmax, xmin),
-           xend = c(ymax, ymax, ymin, ymin), colour = "black") +
-  # geom_segment(data = filter(tracking_example_rfcde, frame.id == contact_frame_id),
-  #              aes(x = pred_bc_x, xend = pred_bc_x,
-  #                  y = xmin, yend = xmax,
-  #                  alpha = pred_bc_density),
-  #              size = 2, color = "red") +
+           xend = c(ymax, ymax, ymin, ymin), colour = "white", alpha = 0.25) +
+  # Line connecting ghost to player:
+  annotate("segment", y = xmin, yend = xmax,
+           x = x_first_down_marker,
+           xend = x_first_down_marker,
+           color = "gold", size = 2) +
+  annotate("segment", y = def_tracking_data$y, yend = def_ghost_y,
+           x = def_tracking_data$x, xend = def_ghost_x,
+           color = "red", size = 2) +
   geom_point(data = play_at_catch_tracking_data, #alpha = 0.75,
-             aes(y = y, x = x, colour = player_role, fill = team, alpha = player_role,
-                 group = nflId, pch = team, size = player_role)) +
+             aes(y = y, x = x, colour = player_role,
+                 fill = player_role, alpha = player_role,
+                 group = nflId, pch = player_role, size = player_role)) +
   geom_segment(data = play_at_catch_tracking_data, #alpha = 0.75,
                aes(y = y, x = x, xend = x + v_x, yend = y + v_y,
                    group = nflId, alpha = player_role),
                color = "black",
+               alpha = 0.75,
                arrow = arrow(length = unit(0.01, "npc"))) +
-  annotate("point", x = ex_play_amos_data$x_ghost, y = ex_play_amos_data$y_ghost,
-           color = "gray", size = 6) +
-  # geom_segment(x = ex_play_new_model_data$adj_bc_x_from_first_down + receiver_tracking_data$x,
-  #              xend = ex_play_new_model_data$adj_bc_x_from_first_down + receiver_tracking_data$x,
-  #              y = xmin, yend = xmax, color = "red", size = 2) +
-  annotate("segment", y = xmin, yend = xmax,
-          x = ex_play_new_model_data$adj_bc_x_from_first_down + receiver_tracking_data$x,
-          xend = ex_play_new_model_data$adj_bc_x_from_first_down + receiver_tracking_data$x,
-          color = "red", size = 1) +
-  scale_size_manual(values = c(6, 6, 3, 5), guide = FALSE) +
-  scale_shape_manual(values = c(21, 16, 21), guide = FALSE) +
-  scale_colour_manual(values = c("black", "black", "#654321", "white"), guide = FALSE) +
-  scale_fill_manual(values = c("darkorange", "#654321", "blue")) +
-  scale_alpha_manual(values = c(0.75, 0.75, 0.6, 0.6), guide = FALSE) +
-  #scale_alpha_continuous(range = c(0.001, .5)) +
+  annotate("point", x = def_ghost_x, y = def_ghost_y,
+           fill = "gray25", size = 6, shape = 21, color = "black") +
+  scale_size_manual(values = c(6, 6, 3, 5, 5), guide = FALSE) +
+  scale_shape_manual(values = c(21, 21, 16, 21, 21), guide = FALSE) +
+  scale_colour_manual(values = c("black", "black", "#654321", "white", "white"), guide = FALSE) +
+  scale_fill_manual(values = c("blue", "red", "#654321", "darkorange", "blue")) +
+  scale_alpha_manual(values = c(0.75, 1, 0.6, 0.6, 0.6), guide = FALSE) +
   xlim(ymin, ymax) +
   coord_fixed() +
   theme_nothing() +
@@ -376,13 +401,38 @@ at_catch_plot <- ggplot() +
 # Now make the density curve of the field at this point as well, starting with
 # actual tracking data:
 ex_play_cde_chart_data <- ex_play_cde %>%
-  mutate(pred_x = receiver_tracking_data$x + pred_yards_gain) %>%
+  # Minus since play direction is to the left
+  mutate(pred_x = receiver_tracking_data$x +
+           (ifelse(receiver_tracking_data$playDirection == "right", 1, -1) *
+              pred_yards_gain)) %>%
   dplyr::inner_join(dplyr::select(new_rfcde_pred_yac_data,
                                   pred_yards_gain, play_cde, play_cdf) %>%
                       rename(new_play_cde = play_cde,
                              new_play_cdf = play_cdf),
                     by = "pred_yards_gain")
 
+ex_rfcde_cde_curve <- ex_play_cde_chart_data %>%
+  dplyr::select(pred_x, play_cde, new_play_cde) %>%
+  pivot_longer(play_cde:new_play_cde,
+               names_to = "type", values_to = "cde") %>%
+  mutate(type = fct_recode(type, Observed = "play_cde",
+                           Ghost = "new_play_cde"),
+         type = fct_rev(type)) %>%
+  ggplot() +
+  geom_vline(xintercept = x_first_down_marker, color = "gold", size = 2) +
+  geom_line(aes(x = pred_x, y = cde, color = type)) +
+  annotate("text", label = 'Change in estimated Pr(1st down) = -0.81\ncompared to expected "ghost" coordinates',
+           color = "red", x = 45, y = .25) +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  scale_color_manual(values = c("red", "gray25")) +
+  labs(x = "Yard line",
+       y = "Conditional density estimate",
+       color = "Type:") +
+  scale_x_continuous(limits = c(0, 120),
+                     breaks = seq(0, 120, by = 10),
+                     labels = c("", as.character(seq(0, 50, by = 10)),
+                                as.character(seq(40, 0, by = -10)), ""))
 
 ex_rfcde_cdf_curve <- ex_play_cde_chart_data %>%
   dplyr::select(pred_x, play_cdf, new_play_cdf) %>%
@@ -393,82 +443,21 @@ ex_rfcde_cdf_curve <- ex_play_cde_chart_data %>%
          type = fct_rev(type)) %>%
   ggplot(aes(x = pred_x, y = cdf, color = type)) +
   geom_line() +
-  geom_vline(xintercept = ex_play_new_model_data$adj_bc_x_from_first_down + receiver_tracking_data$x,
+  geom_vline(xintercept = x_first_down_marker,
              linetype = "dashed", color = "gold") +
   theme_minimal() +
   theme(legend.position = "bottom") +
-  scale_color_manual(values = c("red", "gray")) +
-  labs(x = "Yardline",
+  scale_color_manual(values = c("red", "gray25")) +
+  labs(x = "Yard line",
        y = "Conditional CDF estimate",
        color = "Type:") +
-  scale_x_continuous(limits = c(-10, 120),
-                     breaks = seq(0, 100, by = 10),
-                     labels = as.character(c(seq(0, 50, by = 10), seq(40, 0, by = -10))))
-
-# Plot difference in CDF directly?
-ex_play_cde_chart_data %>%
-  mutate(cdf_diff = play_cdf - new_play_cdf) %>%
-  ggplot(aes(x = pred_x, y = cdf_diff)) +
-  geom_line(color = "black") +
-  geom_vline(xintercept = ex_play_new_model_data$adj_bc_x_from_first_down + receiver_tracking_data$x,
-             linetype = "dashed", color = "gold") +
-  theme_minimal() +
-  theme(legend.position = "bottom") +
-  #scale_color_manual(values = c("red", "gray")) +
-  labs(x = "Yardline",
-       y = "Difference between observed and ghost conditional CDF estimate") +
-  scale_x_continuous(limits = c(-10, 120),
-                     breaks = seq(0, 100, by = 10),
-                     labels = as.character(c(seq(0, 50, by = 10), seq(40, 0, by = -10))))
-
-
-new_rfcde_pred_yac_data %>%
-  # First join the first down and ball carrier position values:
-  dplyr::left_join(dplyr::select(model_data, game_play_id, adj_bc_x,
-                                 adj_bc_x_from_first_down),
-                   by = "game_play_id") %>%
-  # Create indicator variables denoting if the value exceeds the two markers:
-  mutate(reach_td = as.numeric(pred_yards_gain >= adj_bc_x),
-         reach_first_down = as.numeric(pred_yards_gain >= adj_bc_x_from_first_down)) %>%
-  group_by(game_play_id) %>%
-  summarize(new_expected_yac = sum(pred_yards_gain * (play_cde / sum(play_cde)), na.rm = TRUE),
-            new_prob_td = ifelse(any(reach_td == 0),
-                                 1 - max(play_cdf[which(reach_td == 0)]),
-                                 1),
-            new_prob_first_down = ifelse(any(reach_first_down == 0),
-                                         1 - max(play_cdf[which(reach_first_down == 0)]),
-                                         1),
-            new_prob_positive_yac = 1 - play_cdf[which(pred_yards_gain == 0)]) %>%
-  # Convert the negative probs due to rounding
-  mutate(new_prob_td = pmax(new_prob_td, 0),
-         new_prob_first_down = pmax(new_prob_first_down, 0),
-         new_prob_positive_yac = pmax(new_prob_positive_yac, 0))
-
-ex_play_cde %>%
-  # First join the first down and ball carrier position values:
-  dplyr::left_join(dplyr::select(model_data, game_play_id, adj_bc_x,
-                                 adj_bc_x_from_first_down),
-                   by = "game_play_id") %>%
-  # Create indicator variables denoting if the value exceeds the two markers:
-  mutate(reach_td = as.numeric(pred_yards_gain >= adj_bc_x),
-         reach_first_down = as.numeric(pred_yards_gain >= adj_bc_x_from_first_down)) %>%
-  group_by(game_play_id) %>%
-  summarize(new_expected_yac = sum(pred_yards_gain * (play_cde / sum(play_cde)), na.rm = TRUE),
-            new_prob_td = ifelse(any(reach_td == 0),
-                                 1 - max(play_cdf[which(reach_td == 0)]),
-                                 1),
-            new_prob_first_down = ifelse(any(reach_first_down == 0),
-                                         1 - max(play_cdf[which(reach_first_down == 0)]),
-                                         1),
-            new_prob_positive_yac = 1 - play_cdf[which(pred_yards_gain == 0)]) %>%
-  # Convert the negative probs due to rounding
-  mutate(new_prob_td = pmax(new_prob_td, 0),
-         new_prob_first_down = pmax(new_prob_first_down, 0),
-         new_prob_positive_yac = pmax(new_prob_positive_yac, 0))
+  scale_x_continuous(limits = c(0, 120),
+                     breaks = seq(0, 120, by = 10),
+                     labels = c("", as.character(seq(0, 50, by = 10)),
+                                as.character(seq(40, 0, by = -10)), ""))
 
 
 # Stack the two to make a single plot
-plot_grid(contact_rfcde_plot, rfcde_density_curve,
-          ncol = 1)
-
+plot_grid(at_catch_plot, ex_rfcde_cde_curve,
+          ncol = 1, align = "v")
 
