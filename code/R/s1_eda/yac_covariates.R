@@ -201,13 +201,14 @@ bc_dir_plot <- model_data %>%
   ggplot(aes(x = abs_bc_dir_target_endzone, y = end_x_change)) +
   geom_point(alpha = 0.1) +
   geom_vline(xintercept = 90, linetype = "dashed", color = "darkred") +
+  geom_smooth() +
   annotate("segment", x = 100, xend = 165, y = 45, yend = 45,
            color = "darkred", size = 1, arrow = arrow()) +
   annotate("text", label = "Receiver's back is\nfacing target endzone",
            x = 130, y = 50, color = "darkred") +
   labs(x = "Absolute value of angle between receiver's direction and target endzone",
        y = "Observed YAC",
-       title = "Decrease in YAC when receiver's back is facing target endzone",
+       title = "Change in YAC distribution when receiver's back is facing target endzone",
        subtitle = "Vertical red dashed line denotes 90 degree angle") +
   theme_bw() +
   theme(strip.background = element_blank())
